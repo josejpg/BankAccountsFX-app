@@ -151,6 +151,7 @@ public class FileUtils {
         BufferedReader _bufferedReader;
         String _lineReaded;
         String[] _splitDataTransaction;
+        String[] splitDate;
         List<Transaction> listTransactions = new ArrayList<>();
         Boolean isOk = false;
             
@@ -162,12 +163,12 @@ public class FileUtils {
 
             _splitDataTransaction = _lineReaded.split( ";" );
             if( account.getAccountNumber().equals( _splitDataTransaction[ 0 ] ) ){
-                
+                splitDate = _splitDataTransaction[ 1 ].split( "/" );
                 if( typeParams != null && params != null  ){
                     
                     switch( typeParams ){
                         case "date":
-                            
+
                             isOk = _splitDataTransaction[ 1 ].equals( params );
                             
                         break;
@@ -195,6 +196,7 @@ public class FileUtils {
                     
                     if( isOk ){
                         
+                        _splitDataTransaction[ 1 ] = splitDate[ 1 ] + "/" + splitDate[ 0 ] + " / " + splitDate[ 2 ];
                         listTransactions.add( 
                             new Transaction(
                                     _splitDataTransaction[ 0 ],
@@ -209,7 +211,8 @@ public class FileUtils {
                     isOk = false;
                     
                 }else{   
-                    
+
+                    _splitDataTransaction[ 1 ] = splitDate[ 1 ] + "/" + splitDate[ 0 ] + " / " + splitDate[ 2 ];
                     listTransactions.add( 
                             new Transaction(
                                     _splitDataTransaction[ 0 ],
