@@ -5,8 +5,10 @@
  */
 package bankaccountsfx.utils;
 
+import java.util.Optional;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.*;
+import javafx.scene.control.ButtonType;
 
 /**
  *
@@ -43,6 +45,33 @@ public class MessageUtils {
         alert.setContentText( message );
 
         alert.showAndWait();
+        
+    }
+    
+    /**
+     * Shows an confirmation message with the params
+     * @param header
+     * @param message 
+     * @return  
+     */
+    public static boolean showConfirmMessage(String header, String message ){
+        
+        Alert alert = new Alert( AlertType.INFORMATION );
+        alert.setTitle( "Confirmation Dialog" );
+        alert.setHeaderText( header );
+        alert.setContentText( message );
+        alert.getButtonTypes().setAll( ButtonType.OK, ButtonType.CANCEL );
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.get() == ButtonType.OK){
+            
+            return true;
+            
+        } else {
+            
+            alert.close();
+            return false;
+            
+        }
         
     }
     

@@ -16,11 +16,12 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.util.*;
 import java.util.logging.*;
+import javafx.collections.ObservableList;
 import javafx.event.*;
 import javafx.fxml.*;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.Background;
+import javafx.scene.input.MouseButton;
 
 /**
  *
@@ -104,78 +105,9 @@ public class FXMLDocumentController implements Initializable {
                         showError( "Error!", "An account has to be selected." );
 
                     }else{
-                        switch( cmbFilter.getValue() ){
-                            case "Date":
-
-                                if( transactionDate.getValue() == null ||
-                                    transactionDate.getValue().toString().trim().equals( "" ) ){
-                                    
-                                    showError( "Error!", "A date has to be selected." );
-                                    
-                                }else{
-
-                                    DateFormat dateFormat = new SimpleDateFormat( "dd/MM/yyyy" );
-                                    String date = dateFormat.format( 
-                                        Date.from( 
-                                            Instant.from(
-                                                transactionDate
-                                                .getValue()
-                                                .atStartOfDay(
-                                                    ZoneId.systemDefault()
-                                                )
-                                            ) 
-                                        ) 
-                                    );
-
-
-
-                                    listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "date", date );
-                                }
-                                break;
-                            case "Description":
-                                
-                                if( transactionDescription.getText().trim().equals( "" ) ){
-                                    
-                                    showError( "Error!", "A description has to be write." );
-                                    
-                                }else{
-                                
-                                    listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "description", transactionDescription.getText() );
-                                    
-                                }
-                                break;
-                                
-                            case "Amount":
-                                
-                                if( transactionAmount.getText().trim().equals( "" ) ){
-                                    
-                                    showError( "Error!", "An amount has to be write." );
-                                    
-                                }else{
-                                    
-                                    listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "amount", transactionAmount.getText() );
-                                    
-                                }
-                                break;
-                                
-                            case "Income":
-                                
-                                listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "+", "" );
-
-                                break;
-                                
-                            case "Expenses":
-                                
-                                listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "-", "" );
-
-                                break;
-                            default:
-                                
-                                listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), null, null );
-                                
-                                break;
-                        }
-                        createTable();
+                        
+                        filterTransactions();
+                         
                     }
                     
                 }catch(IOException | NullPointerException ex){
@@ -183,6 +115,83 @@ public class FXMLDocumentController implements Initializable {
                             .getLogger( FileUtils.class.getName() )
                             .log( Level.SEVERE, null, ex );
                     showError( FileUtils.class.getName(), ex.getMessage() );
+                }
+                
+            });
+            
+            /**
+             * Listener: Shows all of Transactions for an account in a table
+             * with a selected data
+             */
+            transactionDate.setOnAction( ( ActionEvent e ) -> {
+                
+                try {
+                    
+                    if( cmbFilter.getValue() != null &&
+                        cmbFilter.getValue().trim().equals( "Date" ) ) {
+                    
+                        filterTransactions();
+
+                    }
+                    
+                } catch ( IOException | NullPointerException ex ) {
+                    
+                    Logger
+                            .getLogger( FileUtils.class.getName() )
+                            .log( Level.SEVERE, null, ex );
+                    showError( FileUtils.class.getName(), ex.getMessage() );
+                    
+                }
+                
+            });
+            
+            /**
+             * Listener: Shows all of Transactions for an account in a combo box and a table
+             * with a wrote description
+             */
+            transactionDescription.setOnAction( ( ActionEvent e ) -> {
+                
+                try {
+                    
+                    if( cmbFilter.getValue() != null &&
+                        cmbFilter.getValue().trim().equals( "Description" ) ) {
+                    
+                        filterTransactions();
+
+                    }
+                    
+                } catch ( IOException | NullPointerException ex ) {
+                    
+                    Logger
+                            .getLogger( FileUtils.class.getName() )
+                            .log( Level.SEVERE, null, ex );
+                    showError( FileUtils.class.getName(), ex.getMessage() );
+                    
+                }
+                
+            });
+            /**
+             * Listener: Shows all of Transactions for an account in a combo box and a table
+             * with a wrote amount
+             */
+            transactionAmount.setOnAction( ( ActionEvent e ) -> {
+                
+                try {
+                    
+                    if( cmbFilter.getValue() != null &&
+                        cmbFilter.getValue().trim().equals( "Amount" )) {
+                    
+                        filterTransactions();
+
+                    }
+                    
+                } catch ( IOException | NullPointerException ex ) {
+                    
+                    Logger
+                            .getLogger( FileUtils.class.getName() )
+                            .log( Level.SEVERE, null, ex );
+                    showError( FileUtils.class.getName(), ex.getMessage() );
+                    
                 }
                 
             });
@@ -234,8 +243,27 @@ public class FXMLDocumentController implements Initializable {
              * Listener: Save a new transaction with form data
              */
             btnTransactionAdd.setOnAction( ( ActionEvent e ) -> {
-                
-                saveNewTransaction();
+                if( cmbAccount.getValue() == null || cmbAccount.getValue().toString().trim().equals( "" ) ) {
+                    
+                    showError( "Error!", "An account has to be selected." );
+
+                }else if( transactionDate.getValue() == null || transactionDate.getValue().toString().trim().equals( "" ) ){
+
+                    showError( "Error!", "Transaction's date is required." );
+
+                }else if( transactionDescription.getText().trim().equals( "" ) ){
+
+                    showError( "Error!", "Transaction's description is required." );
+
+                }else if( transactionAmount.getText().trim().equals( "" ) ){
+
+                    showError( "Error!", "Transaction's amount is required." );
+
+                }else{
+                    
+                    saveNewTransaction( cmbAccount.getValue(), transactionDate, transactionDescription.getText().trim(), Float.parseFloat( transactionAmount.getText().trim() ) );
+                    
+                }
                 
             });
             
@@ -260,7 +288,7 @@ public class FXMLDocumentController implements Initializable {
      * Create a Table with a transaction's list
      */
     private void createTable(){
-        
+
         tableTransactions.setColumnResizePolicy( TableView.CONSTRAINED_RESIZE_POLICY );
         TableColumn<Transaction, String> dateColumn = new TableColumn( "Date" );
         dateColumn.setPrefWidth( 113.2 );
@@ -284,17 +312,90 @@ public class FXMLDocumentController implements Initializable {
             new PropertyValueFactory( "amount" )
         );
         
-        tableTransactions.setOnMouseClicked( (e) -> {
-        
-        } );
 
         tableTransactions.getColumns().clear();
         tableTransactions.getItems().clear();
         tableTransactions.getColumns().addAll( dateColumn, descriptionColumn, amountColumn );
         tableTransactions.getItems().addAll( listTransactions );
         
-        
+        // Set new balance
         totalSalary.setText( FileUtils.getTotalAmount( listTransactions ).toString() + "€" );
+        
+        // Set background colors in case negative or positive amount
+        amountColumn.setCellFactory(e -> new TableCell<Transaction, Float>() {
+            
+            @Override
+            public void updateItem(Float item, boolean empty) {
+                
+                // Always invoke super constructor.
+                super.updateItem(item, empty);
+
+                if (item == null || empty) {
+                    
+                    setText(null);
+                    
+                } else {
+                    
+                    setText(item.toString());
+                   
+                    if(item >= 0 ){
+                     
+                        this.setStyle( "-fx-text-fill: white; -fx-background-color: green; -fx-alignment: center;" );
+                    
+                    }else{
+                        
+                        this.setStyle( "-fx-text-fill: white; -fx-background-color: red; -fx-alignment: center-right;" );
+                    
+                    }
+                    
+                }
+            }
+            
+        });
+        
+        // Cancel transactions with positive amount when row is clicked
+        // with secondary button
+        tableTransactions.setRowFactory(tv -> {
+            TableRow<Transaction> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if ( !row.isEmpty() && 
+                    event.getButton()==MouseButton.SECONDARY ) {
+
+                    Transaction clickedRow = row.getItem();
+                    System.out.println( clickedRow );
+                    if( clickedRow.getAmount() > 0 ){
+                        
+                        try {
+                            List<Transaction> searchCanels = loadTransactionsForAccount( cmbAccount.getValue(), "description", "Canceled: " + clickedRow.getDescription() );
+                            
+                            if( searchCanels.isEmpty() ){
+                                
+                                if( showConfirmMessage( "Do you really want cancel this transaction?", "Amount canceled has this amount: " + clickedRow.getAmount() ) ){
+                                    
+                                    saveNewTransaction( cmbAccount.getValue(), new DatePicker( LocalDate.now() ), "Canceled: " + clickedRow.getDescription(), clickedRow.getAmount() * -1 );
+                                    
+                                }
+                                
+                            }else{
+                                
+                                showMessage( "Transaction previously canceled", "This transaction was canceled before." );
+                                
+                            }
+                        } catch ( IOException | NullPointerException ex ) {
+
+                            Logger
+                                .getLogger( FileUtils.class.getName() )
+                                .log( Level.SEVERE, null, ex );
+                            showError( FileUtils.class.getName(), ex.getMessage() );
+
+                        }
+                    }
+                    
+                }
+            });
+            return row ;
+        });
+        
     }
     
     /**
@@ -341,62 +442,118 @@ public class FXMLDocumentController implements Initializable {
      * Save a new transaction with form data in DB
      */
     
-    private void saveNewTransaction(){
-        
-        if( cmbAccount.getValue() == null || cmbAccount.getValue().toString().trim().equals( "" ) ) {
-                    
-            showError( "Error!", "An account has to be selected." );
+    private void saveNewTransaction( Account account, DatePicker date, String description, float amount ){
 
-        }else if( transactionDate.getValue() == null || transactionDate.getValue().toString().trim().equals( "" ) ){
+        try {
 
-            showError( "Error!", "Transaction's date is required." );
+            Instant instant = Instant.from(
+                    date.getValue().atStartOfDay( ZoneId.systemDefault() )
+            );
 
-        }else if( transactionDescription.getText().trim().equals( "" ) ){
+            Transaction newTransaction = new Transaction(
+                    account.getAccountNumber(),
+                    Date.from( instant ),
+                    description,
+                    amount
+            );
 
-            showError( "Error!", "Transaction's description is required." );
+            listTransactions.add(
+                    newTransaction
+            );
+            saveTransactions( listTransactions );
+            showMessage( "Succesful!", "New account was registered successfully." );
 
-        }else if( transactionAmount.getText().trim().equals( "" ) ){
+            createTable();
 
-            showError( "Error!", "Transaction's amount is required." );
+        } catch ( IOException | NullPointerException | NumberFormatException ex ) {
 
-        }else{
-
-            try {
-
-                Account accountSelected = cmbAccount.getValue();
-                Instant instant = Instant.from(
-                        transactionDate
-                                .getValue()
-                                .atStartOfDay(
-                                        ZoneId.systemDefault()
-                                )
-                );
-
-                Transaction newTransaction = new Transaction(
-                        accountSelected.getAccountNumber(),
-                        Date.from( instant ),
-                        transactionDescription.getText(),
-                        Float.parseFloat( transactionAmount.getText() )
-                );
-
-                listTransactions.add(
-                        newTransaction
-                );
-                saveTransactions( listTransactions );
-                showMessage( "Succesful!", "New account was registered successfully." );
-                
-                createTable();
-
-            } catch ( IOException | NullPointerException | NumberFormatException ex ) {
-
-                Logger
-                        .getLogger( FileUtils.class.getName() )
-                        .log( Level.SEVERE, null, ex );
-                showError( FileUtils.class.getName(), ex.getMessage() );
-
-            }
+            Logger
+                    .getLogger( FileUtils.class.getName() )
+                    .log( Level.SEVERE, null, ex );
+            showError( FileUtils.class.getName(), ex.getMessage() );
 
         }
+        
+    }
+    
+    /**
+     * Filter transactions with combo box and inputs 
+     * @throws IOException
+     * @throws NullPointerException 
+     */
+    private void filterTransactions() throws IOException, NullPointerException{
+        switch( cmbFilter.getValue() ){
+            case "Date":
+
+                if( transactionDate.getValue() == null ||
+                    transactionDate.getValue().toString().trim().equals( "" ) ){
+
+                    showError( "Error!", "A date has to be selected." );
+
+                }else{
+
+                    DateFormat dateFormat = new SimpleDateFormat( "dd/MM/yyyy" );
+                    String date = dateFormat.format( 
+                        Date.from( 
+                            Instant.from(
+                                transactionDate
+                                .getValue()
+                                .atStartOfDay(
+                                    ZoneId.systemDefault()
+                                )
+                            ) 
+                        ) 
+                    );
+                    
+                    listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "date", date );
+                
+                }
+                break;
+            case "Description":
+
+                if( transactionDescription.getText().trim().equals( "" ) ){
+
+                    showError( "Error!", "A description has to be write." );
+
+                }else{
+
+                    listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "description", transactionDescription.getText() );
+
+                }
+                break;
+
+            case "Amount":
+
+                if( transactionAmount.getText().trim().equals( "" ) ){
+
+                    showError( "Error!", "An amount has to be write." );
+
+                }else{
+
+                    listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "amount", transactionAmount.getText() );
+
+                }
+                break;
+
+            case "Income":
+
+                listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "+", "" );
+
+                break;
+
+            case "Expenses":
+
+                listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), "-", "" );
+
+                break;
+            default:
+
+                listTransactions = loadTransactionsForAccount( cmbAccount.getValue(), null, null );
+
+                break;
+        }
+        
+        createTable();
         
     }
     
