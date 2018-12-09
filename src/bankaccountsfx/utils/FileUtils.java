@@ -161,16 +161,13 @@ public class FileUtils {
         do{
 
             _splitDataTransaction = _lineReaded.split( ";" );
-            
             if( account.getAccountNumber().equals( _splitDataTransaction[ 0 ] ) ){
                 
                 if( typeParams != null && params != null  ){
                     
                     switch( typeParams ){
                         case "date":
-                            System.out.println("_splitDataTransaction: "+ _splitDataTransaction[ 1 ]);
-                            System.out.println("params: "+params);
-                            System.out.println(_splitDataTransaction[ 1 ].equals( params ));
+                            
                             isOk = _splitDataTransaction[ 1 ].equals( params );
                             
                         break;
@@ -181,7 +178,17 @@ public class FileUtils {
                         break;
                         case "amount":
                             
-                            isOk = Float.parseFloat( _splitDataTransaction[ 2 ] ) >= Float.parseFloat( params );
+                            isOk = Float.parseFloat( _splitDataTransaction[ 3 ] ) >= Float.parseFloat( params );
+                            
+                        break;
+                        case "+":
+                            
+                            isOk = Float.parseFloat( _splitDataTransaction[ 3 ] ) >= 0;
+                            
+                        break;
+                        case "-":
+                            
+                            isOk = Float.parseFloat( _splitDataTransaction[ 3 ] ) < 0;
                             
                         break;
                     }
@@ -263,4 +270,20 @@ public class FileUtils {
             
     }
     
+    /**
+     * Get total amount from transactions list
+     * @param listTransactions
+     * @return 
+     */
+    public static Float getTotalAmount( List<Transaction> listTransactions ){
+        float result = 0;
+        
+        for( Transaction dataTransaction: listTransactions ){
+
+            result += dataTransaction.getAmount();
+
+        }
+        
+        return result;
+    }
 }
