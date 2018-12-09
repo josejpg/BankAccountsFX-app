@@ -16,12 +16,16 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.util.*;
 import java.util.logging.*;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.*;
 import javafx.fxml.*;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseButton;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 
 /**
  *
@@ -57,6 +61,19 @@ public class FXMLDocumentController implements Initializable {
     private List<String> params;
     public List<Account> listAccounts;
     public List<Transaction> listTransactions;
+    @FXML
+    private Label textTotal;
+    private PieChart blanceChart;
+    @FXML
+    private AnchorPane panePie;
+    @FXML
+    private AnchorPane paneData;
+    @FXML
+    private VBox vBox;
+    @FXML
+    private PieChart blanceChartPositive;
+    @FXML
+    private PieChart blanceChartNegative;
     
     private void handleButtonAction(ActionEvent event) {
         System.out.println("You clicked me!");
@@ -267,6 +284,55 @@ public class FXMLDocumentController implements Initializable {
                 
             });
             
+            btnTransactionChart.setOnAction( ( ActionEvent e ) -> {
+
+                try{
+                    
+                    ObservableList<PieChart.Data> pieChartDataPositive = FXCollections.observableArrayList();
+                    ObservableList<PieChart.Data> pieChartDataNegative = FXCollections.observableArrayList();
+                    HashMap<String,Float> hashChart = new HashMap<>();
+
+                    listTransactions.forEach( transaction -> {
+                        
+                        if( !hashChart.isEmpty() &&
+                            hashChart.containsKey( transaction.getDescription() ) 
+                        ){
+                            
+                            hashChart.replace( transaction.getDescription() , hashChart.get( transaction.getDescription() ) , hashChart.get( transaction.getDescription() ) + transaction.getAmount() );
+                           
+                        }else{
+                            
+                            hashChart.put(transaction.getDescription(), transaction.getAmount() );
+                            
+                        }
+
+                    });
+                    
+                    hashChart.forEach( ( keyHash, valueHash ) -> {
+                        
+                        float amount = valueHash;
+                        if( amount < 0 ){ 
+                            amount = amount * -1; 
+                            pieChartDataNegative.add( new PieChart.Data( keyHash, amount ) );
+                        }else{
+                            pieChartDataPositive.add( new PieChart.Data( keyHash, amount ) );
+                        }
+                        
+
+                    });
+                    blanceChartPositive.setTitle( "Income" );
+                    blanceChartNegative.setTitle( "Expenses" );
+                    blanceChartPositive.setData(pieChartDataPositive);
+                    blanceChartNegative.setData(pieChartDataNegative);
+                    
+                }catch(NullPointerException ex){
+                    Logger
+                    .getLogger( FileUtils.class.getName() )
+                    .log( Level.SEVERE, null, e );
+                    showError( FileUtils.class.getName(), ex.getMessage() );
+                }
+            });
+            
         }catch( FileNotFoundException e ){
             
             Logger
@@ -441,7 +507,6 @@ public class FXMLDocumentController implements Initializable {
     /**
      * Save a new transaction with form data in DB
      */
-    
     private void saveNewTransaction( Account account, DatePicker date, String description, float amount ){
 
         try {
